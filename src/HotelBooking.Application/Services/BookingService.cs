@@ -4,14 +4,14 @@ namespace BookingManagement;
 
 public class BookingService(IBookingRepository bookingRepository)
 {
-    public Booking CreateBooking(BookingRequest bookingRequest)
+    public async Task<Booking> CreateBooking(BookingRequest bookingRequest)
     {
 
         if (bookingRequest.CheckOutDate <= bookingRequest.CheckInDate)
         {
             throw new ArgumentException(BookingErrorMessages.CheckOutBeforeCheckIn);
         }
-        if (bookingRepository.IsRoomBooked(bookingRequest.RoomId, bookingRequest.CheckInDate, bookingRequest.CheckOutDate))
+        if (await bookingRepository.IsRoomBookedAsync(bookingRequest.RoomId, bookingRequest.CheckInDate, bookingRequest.CheckOutDate))
         {
             throw new InvalidOperationException(BookingErrorMessages.RoomAlreadyBooked);
         }
@@ -22,7 +22,7 @@ public class BookingService(IBookingRepository bookingRepository)
               bookingRequest.RoomId,
               bookingRequest.CheckInDate,
               bookingRequest.CheckOutDate);
-        bookingRepository.Save(booking);
+        await bookingRepository.SaveAsync(booking);
         return booking;
     }
 

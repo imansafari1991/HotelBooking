@@ -2,6 +2,7 @@
 
 public class Booking
 {
+    public int Id { get; set; }
     public Booking(int customerId, int hotelId, int roomId, DateOnly checkInDate, DateOnly checkOutDate)
     {
         CustomerId = customerId;

@@ -104,7 +104,7 @@ public class BookingRepositoryTests
         var checkIn = DateOnly.FromDateTime(DateTime.Today);
         var checkOut = DateOnly.FromDateTime(DateTime.Today.AddDays(2));
         // Act
-        var isBooked =await _bookingRepository.IsRoomBookedAsync(roomId, checkIn, checkOut);
+        var isBooked = await _bookingRepository.IsRoomBookedAsync(roomId, checkIn, checkOut);
         // Assert
         Assert.That(isBooked, Is.False);
     }
@@ -125,8 +125,67 @@ public class BookingRepositoryTests
         );
         await _bookingRepository.SaveAsync(booking);
         // Act
-        var isBooked =await _bookingRepository.IsRoomBookedAsync(roomId, checkIn, checkOut);
+        var isBooked = await _bookingRepository.IsRoomBookedAsync(roomId, checkIn, checkOut);
         // Assert
         Assert.That(isBooked, Is.True);
+    }
+
+    [Test]
+    public async Task IsRoomBooked_WhenNewBookingOverlapsAtStart_ShouldReturnTrue()
+    {
+        // Arrange
+        var existingCheckIn = DateOnly.FromDateTime(DateTime.Today.AddDays(2));
+        var existingCheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
+
+        var booking = new Booking(1, 101, 1, existingCheckIn, existingCheckOut);
+        await _bookingRepository.SaveAsync(booking);
+
+        var newCheckIn = DateOnly.FromDateTime(DateTime.Today);
+        var newCheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(3));
+
+        // Act
+        var result = await _bookingRepository.IsRoomBookedAsync(1, newCheckIn, newCheckOut);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task IsRoomBooked_WhenNewBookingOverlapsAtEnd_ShouldReturnTrue()
+    {
+        // Arrange
+        var existingCheckIn = DateOnly.FromDateTime(DateTime.Today);
+        var existingCheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(3));
+
+        var booking = new Booking(1, 101, 1, existingCheckIn, existingCheckOut);
+        await _bookingRepository.SaveAsync(booking);
+
+        var newCheckIn = DateOnly.FromDateTime(DateTime.Today.AddDays(2));
+        var newCheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
+
+        // Act
+        var result =await _bookingRepository.IsRoomBookedAsync(1, newCheckIn, newCheckOut);
+
+        // Assert
+        Assert.That(result, Is.True);
+    }
+    [Test]
+    public async Task IsRoomBooked_WhenNewBookingIsBeforeExisting_ShouldReturnFalse()
+    {
+        // Arrange
+        var existingCheckIn = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
+        var existingCheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(7));
+
+
+        var booking = new Booking(1, 101, 1, existingCheckIn, existingCheckOut);
+        await _bookingRepository.SaveAsync(booking);
+        var newCheckIn = DateOnly.FromDateTime(DateTime.Today);
+        var newCheckOut = DateOnly.FromDateTime(DateTime.Today.AddDays(2));
+
+        // Act
+        var result =await _bookingRepository.IsRoomBookedAsync(101, newCheckIn, newCheckOut);
+
+        // Assert
+        Assert.That(result, Is.False);
     }
 }

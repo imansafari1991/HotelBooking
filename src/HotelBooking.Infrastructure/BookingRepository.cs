@@ -20,10 +20,11 @@ public class BookingRepository : IBookingRepository
 
     public Task<bool> IsRoomBookedAsync(int roomId, DateOnly checkIn, DateOnly checkOut)
     {
+        
         return _context.Bookings.AnyAsync(b =>
             b.RoomId == roomId &&
-            b.CheckInDate == checkIn &&
-            b.CheckOutDate == checkOut);
+            (b.CheckInDate >= checkIn && b.CheckOutDate >= checkIn) ||
+            (b.CheckInDate <= checkOut && b.CheckOutDate <= checkOut));
     }
 
     public async Task SaveAsync(Booking booking)

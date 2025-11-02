@@ -1,0 +1,15 @@
+@HotelBooking.API_HostAddress = http://localhost:5195
+
+GET {{HotelBooking.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+### Create Booking - Valid Request
+POST {{HotelBooking.API_HostAddress}}/api/booking
+Content-Type: application/json
+{
+  "customerId": 1,
+  "roomId": 101,
+  "hotelId": 1,
+  "checkIn": "2024-06-01",
+  "checkOut": "2024-06-05"
+}

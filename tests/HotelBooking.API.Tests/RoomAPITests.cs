@@ -44,7 +44,7 @@ public class RoomAPITests
     {
         _client.Dispose();
         _factory.Dispose();
-        _connection.Close();
+        _connection?.Close();
         _connection?.Dispose();
     }
 

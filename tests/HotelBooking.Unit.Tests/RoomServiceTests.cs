@@ -42,7 +42,7 @@ public class RoomServiceTests
     }
 
     [TestCase("")]
-    [TestCase(null)]
+    [TestCase(null!)]
     [TestCase("   ")]
     public void CreateRoom_WithInvalidRoomNumber_ShouldThrowException(string roomNumber)
     {
@@ -63,7 +63,7 @@ public class RoomServiceTests
     }
 
     [TestCase("")]
-    [TestCase(null)]
+    [TestCase(null!)]
     [TestCase("   ")]
     public void CreateRoom_WithInvalidRoomType_ShouldThrowException(string roomType)
     {

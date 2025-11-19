@@ -1,32 +1,93 @@
-unit-tests:
-  runs-on: ubuntu-latest
-  needs: build
+﻿name: PR Build and Test
 
-  steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+on:
+  pull_request:
+    branches: [ master, develop ]
 
-  - name: Setup .NET
-    uses: actions/setup-dotnet@v4
-    with:
-      dotnet-version: '8.0.x'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  - name: Restore dependencies
-    run: dotnet restore
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          include-prerelease: true   # remove if you are on stable .NET 8/9
 
-  - name: Build test project
-    run: dotnet build tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj --configuration Release
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props') }}
+          restore-keys: ${{ runner.os }}-nuget-
 
-  - name: Run Unit Tests
-    run: dotnet test tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj \
-          --no-build --configuration Release \
-          --logger "trx;LogFileName=unit-tests.trx"
+      - name: Restore dependencies
+        run: dotnet restore
 
-  - name: Publish Unit Test Report
-    if: always()
-    uses: dorny/test-reporter@v2
-    with:
-      name: "Unit Tests"
-      path: "**/*unit-tests.trx"
-      reporter: dotnet-trx
-      fail-on-error: "false"
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
+        # ↑↑↑ correct order: --no-restore comes BEFORE --configuration
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            **/bin/Release/**
+            !**/*.pdb
+          if-no-files-found: error
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-project:
+          - name: Unit Tests
+            csproj: tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj
+            trx: unit-tests.trx
+          - name: Integration Tests
+            csproj: tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj
+            trx: api-tests.trx
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          include-prerelease: true
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: .   # restores binaries to original locations → --no-build works
+
+      - name: Run Tests – force TRX into workspace root
+        run: |
+          dotnet test "${{ matrix.test-project.csproj }}" \
+            --no-build \
+            --configuration Release \
+            --results-directory "${{ github.workspace }}" \
+            --logger "trx;LogFileName=${{ matrix.test-project.trx }}"
+
+      # Optional debug step – you can remove it later
+      - name: List TRX files (debug)
+        if: always()
+        run: find "${{ github.workspace }}" -name "*.trx" || echo "No trx found"
+
+      - name: Publish Test Report
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: ${{ matrix.test-project.name }}
+          path: ${{ matrix.test-project.trx }}   # exact filename in root → never fails
+          reporter: dotnet-trx
+          fail-on-error: 'true'
+          list-tests: 'all'

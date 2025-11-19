@@ -2,35 +2,96 @@ name: PR Build and Test
 
 on:
   pull_request:
-    branches: [master, develop ]
+    branches: [master, develop]
+
 jobs:
+
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-        
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
     - name: Restore dependencies
       run: dotnet restore
-      
+
     - name: Build solution
       run: dotnet build --no-restore --configuration Release
-  unit-tests:   
-    runs-on: ubuntu-latest 
-    needs: build
-    steps:
-    - name: Run Unit Tests
-      run: dotnet test tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj --no-build --configuration Release --verbosity normal --logger \"trx;LogFileName=unit-tests.trx\"
-  integration-tests:   
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-output
+        path: |
+          **/bin/Release/**
+          !**/*.pdb  # optional: exclude debug symbols to reduce size
+
+  unit-tests:
     runs-on: ubuntu-latest
     needs: build
+
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-output
+
+    - name: Run Unit Tests
+      run: dotnet test tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj \
+            --no-build --configuration Release \
+            --logger "trx;LogFileName=unit-tests.trx"
+
+    - name: Publish Unit Test Results
+      uses: actions/upload-test-results@v2
+      with:
+        files: "**/*.trx"
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-output
+
     - name: Run Integration Tests
-      run: dotnet test tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj --no-build --configuration Release --verbosity normal --logger \"trx;LogFileName=api-tests.trx\"
-      
+      run: dotnet test tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj \
+            --no-build --configuration Release \
+            --logger "trx;LogFileName=api-tests.trx"
+
+    - name: Publish Integration Test Results
+      uses: actions/upload-test-results@v2
+      with:
+        files: "**/*.trx"

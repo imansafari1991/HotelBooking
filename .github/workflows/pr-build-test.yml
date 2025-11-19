@@ -70,4 +70,18 @@ jobs:
             --results-directory "${{ runner.temp }}/trx" \
             --logger "trx;LogFileName=${{ matrix.trx }}"
 
-      - name
+      - name: Copy TRX files to workspace (so reporter can find them)
+        run: |
+          cp ${{ runner.temp }}/trx/*.trx . || echo "No trx yet"
+
+      - name: Debug - list TRX files
+        run: ls -la *.trx || echo "No .trx files in root"
+
+      - name: Publish Test Report
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: ${{ matrix.test-name }}
+          path: ${{ matrix.trx }}
+          reporter: dotnet-trx
+          fail-on-error: true

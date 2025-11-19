@@ -14,20 +14,16 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-          include-prerelease: true     # remove if you are on stable .NET 9 or 8
+          include-prerelease: true
 
       - name: Cache NuGet
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props') }}
-          restore-keys: ${{ runner.os }}-nuget-
 
-      - name: Restore
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Restore & Build
+        run: dotnet build --configuration Release
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -43,10 +39,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - test-name: "Unit Tests"
+          - test-name: Unit Tests
             project: tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj
             trx: unit-tests.trx
-          - test-name: "Integration Tests"
+          - test-name: Integration Tests
             project: tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj
             trx: api-tests.trx
 
@@ -65,23 +61,13 @@ jobs:
           name: build-output
           path: .
 
-      - name: Run tests → force TRX into a dedicated folder
+      - name: Run tests → ABSOLUTE PATH (this is the fix)
         run: |
-          mkdir -p ./trx-results
+          mkdir -p ${{ runner.temp }}/trx
           dotnet test "${{ matrix.project }}" \
             --no-build \
             --configuration Release \
-            --results-directory ./trx-results \
+            --results-directory "${{ runner.temp }}/trx" \
             --logger "trx;LogFileName=${{ matrix.trx }}"
 
-      - name: Show what was created (debug - you can delete later)
-        run: ls -la ./trx-results || echo "No files"
-
-      - name: Publish test report
-        if: always()
-        uses: dorny/test-reporter@v2
-        with:
-          name: ${{ matrix.test-name }}
-          path: trx-results/${{ matrix.trx }}
-          reporter: dotnet-trx
-          fail-on-error: true
+      - name

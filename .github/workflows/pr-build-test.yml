@@ -63,10 +63,15 @@ jobs:
             --no-build --configuration Release \
             --logger "trx;LogFileName=unit-tests.trx"
 
-    - name: Publish Unit Test Results
-      uses: actions/upload-test-results@v2
+    - name: Publish Test Report
+      if: always()
+      uses: dorny/test-reporter@v2
       with:
-        files: "**/*.trx"
+        name: "Unit Tests"
+        path: "**/unit-tests.trx"
+        reporter: dotnet-trx
+        fail-on-error: "true"
+        list-tests: "all"
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -91,7 +96,12 @@ jobs:
             --no-build --configuration Release \
             --logger "trx;LogFileName=api-tests.trx"
 
-    - name: Publish Integration Test Results
-      uses: actions/upload-test-results@v2
+    - name: Publish Test Report
+      if: always()
+      uses: dorny/test-reporter@v2
       with:
-        files: "**/*.trx"
+        name: "Integration Tests"
+        path: "**/api-tests.trx"
+        reporter: dotnet-trx
+        fail-on-error: "true"
+        list-tests: "all"

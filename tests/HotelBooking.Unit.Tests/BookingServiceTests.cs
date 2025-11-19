@@ -59,7 +59,7 @@ public class BookingServiceTests
         //Act && Assert
         var ex = Assert.ThrowsAsync<ArgumentException>(async () => await _bookingService.CreateBooking(bookingRequest));
         Assert.That(ex.Message, Is.EqualTo(BookingErrorMessages.CheckOutBeforeCheckIn));
-        _bookingRepositoryMock.Verify(repo => repo.SaveAsync(It.IsAny<Booking>()), Times.Once);
+        _bookingRepositoryMock.Verify(repo => repo.SaveAsync(It.IsAny<Booking>()), Times.Never);
     }
 
     [Test]

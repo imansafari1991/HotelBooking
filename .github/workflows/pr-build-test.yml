@@ -3,11 +3,8 @@
 on:
   pull_request:
     branches: [master, develop ]
-  push:
-    branches: [master, develop ]
-
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -24,10 +21,14 @@ jobs:
       
     - name: Build solution
       run: dotnet build --no-restore --configuration Release
-      
+  unit-tests:   
+    runs-on: ubuntu-latest  
+    steps:
     - name: Run Unit Tests
       run: dotnet test tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj --no-build --configuration Release --verbosity normal --logger \"trx;LogFileName=unit-tests.trx\"
-      
-    - name: Run API Tests
+  integration-tests:   
+    runs-on: ubuntu-latest      
+    steps:
+    - name: Run Integration Tests
       run: dotnet test tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj --no-build --configuration Release --verbosity normal --logger \"trx;LogFileName=api-tests.trx\"
       

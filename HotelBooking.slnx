@@ -7,7 +7,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj" Id="d1150e23-8255-4b33-98d7-1fca790cdff1" />
-    <Project Path="tests/HotelBooking.Integration.Tests/HotelBooking.Integration.Tests.csproj" Id="6b5e9c8c-c47a-47f1-918d-3fb84f64e412" />
     <Project Path="tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj" />
   </Folder>
 </Solution>

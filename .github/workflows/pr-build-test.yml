@@ -31,11 +31,3 @@ jobs:
     - name: Run API Tests
       run: dotnet test tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj --no-build --configuration Release --verbosity normal --logger \"trx;LogFileName=api-tests.trx\"
       
-    - name: Publish Test Results
-      uses: dorny/test-reporter@v1
-      if: always()
-      with:
-        name: Test Results
-        path: '**/*.trx'
-        reporter: dotnet-trx
-        fail-on-error: true

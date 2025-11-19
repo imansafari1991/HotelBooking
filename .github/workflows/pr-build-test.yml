@@ -13,14 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # optional but helpful for some tools
+          fetch-depth: 0
 
       - name: Setup .NET
         id: setup
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
-          include-prerelease: true   # <-- critical for .NET 10 previews
+          dotnet-version: '10.0.x'      # Change to '9.0.x' or '8.0.x' if you're not on .NET 10 preview
+          include-prerelease: true     # Required for .NET 10 previews (remove if on stable)
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
@@ -41,17 +41,16 @@ jobs:
         with:
           name: build-output
           path: |
-            **/bin/Release/net10.0**/
-            **/bin/Release/net9.0**/   # fallback if multi-targeted
-            !**/*.pdb                  # optional: exclude symbols
+            **/bin/Release/**
+            !**/*.pdb                  # optional: exclude debug symbols
           if-no-files-found: error
 
-  test-job:
+  test:
     needs: build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-type: [unit, integration]
+        test-type: [ unit, integration ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,17 +65,24 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-output
-          path: .   # This restores files to their original relative paths
+          path: .   # restores binaries to their original locations so --no-build works
+
+      - name: Create test results directory
+        run: mkdir -p test-results
 
       - name: Run Tests
         run: |
           if [ "${{ matrix.test-type }}" == "unit" ]; then
             dotnet test tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj \
-              --no-build --configuration Release \
+              --no-build \
+              --configuration Release \
+              --results-directory ./test-results \
               --logger "trx;LogFileName=unit-tests.trx"
           else
             dotnet test tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj \
-              --no-build --configuration Release \
+              --no-build \
+              --configuration Release \
+              --results-directory ./test-results \
               --logger "trx;LogFileName=api-tests.trx"
           fi
 
@@ -84,8 +90,8 @@ jobs:
         if: always()
         uses: dorny/test-reporter@v2
         with:
-          name: "${{ matrix.test-type == 'unit' && 'Unit Tests' || 'Integration Tests' }}"
-          path: "**/${{ matrix.test-type == 'unit' && 'unit-tests.trx' || 'api-tests.trx' }}"
+          name: ${{ matrix.test-type == 'unit' && 'Unit Tests' || 'Integration Tests' }}
+          path: test-results/*.trx
           reporter: dotnet-trx
           fail-on-error: 'true'
           list-tests: 'all'

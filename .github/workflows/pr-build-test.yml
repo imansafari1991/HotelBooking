@@ -7,34 +7,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      dotnet-version: ${{ steps.setup.outputs.dotnet-version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET
-        id: setup
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'      # Change to '9.0.x' or '8.0.x' if you're not on .NET 10 preview
-          include-prerelease: true     # Required for .NET 10 previews (remove if on stable)
+          dotnet-version: '10.0.x'
+          include-prerelease: true
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
+          restore-keys: ${{ runner.os }}-nuget-
 
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build solution
-        run: dotnet build --no-restore --configuration Release
+      - name: Restore & Build
+        run: dotnet build --configuration Release --no-restore
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -42,7 +33,8 @@ jobs:
           name: build-output
           path: |
             **/bin/Release/**
-            !**/*.pdb                  # optional: exclude debug symbols
+            **/obj/Release/**
+            !**/*.pdb
           if-no-files-found: error
 
   test:
@@ -50,7 +42,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-type: [ unit, integration ]
+        test-project:
+          - name: Unit Tests
+            csproj: tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj
+            trx: unit-tests.trx
+          - name: Integration Tests
+            csproj: tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj
+            trx: api-tests.trx
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -65,33 +63,30 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-output
-          path: .   # restores binaries to their original locations so --no-build works
+          path: .
 
-      - name: Create test results directory
-        run: mkdir -p test-results
-
-      - name: Run Tests
+      # Force a known, fixed location for TRX files
+      - name: Run Tests (force TRX into workspace root)
         run: |
-          if [ "${{ matrix.test-type }}" == "unit" ]; then
-            dotnet test tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj \
-              --no-build \
-              --configuration Release \
-              --results-directory ./test-results \
-              --logger "trx;LogFileName=unit-tests.trx"
-          else
-            dotnet test tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj \
-              --no-build \
-              --configuration Release \
-              --results-directory ./test-results \
-              --logger "trx;LogFileName=api-tests.trx"
-          fi
+          dotnet test "${{ matrix.test-project.csproj }}" \
+            --no-build \
+            --configuration Release \
+            --results-directory "${{ github.workspace }}" \
+            --logger "trx;LogFileName=${{ matrix.test-project.trx }}"
+
+      # Debug: show exactly where the file landed (remove later if you want)
+      - name: List generated TRX files
+        if: always()
+        run: |
+          echo "Looking for *.trx in workspace..."
+          find "${{ github.workspace }}" -name "*.trx" -type f || echo "No .trx files found"
 
       - name: Publish Test Report
         if: always()
         uses: dorny/test-reporter@v2
         with:
-          name: ${{ matrix.test-type == 'unit' && 'Unit Tests' || 'Integration Tests' }}
-          path: test-results/*.trx
+          name: ${{ matrix.test-project.name }}
+          path: ${{ matrix.test-project.trx }}          # exact filename in root
           reporter: dotnet-trx
           fail-on-error: 'true'
           list-tests: 'all'

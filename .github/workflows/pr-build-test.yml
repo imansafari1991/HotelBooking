@@ -25,7 +25,7 @@ jobs:
           restore-keys: ${{ runner.os }}-nuget-
 
       - name: Restore & Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --no-restore --configuration Release 
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

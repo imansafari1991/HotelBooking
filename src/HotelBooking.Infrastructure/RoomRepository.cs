@@ -30,6 +30,14 @@ public class RoomRepository : IRoomRepository
 
     public async Task UpdateAsync(Room room)
     {
+        var existingEntry = _context.ChangeTracker.Entries<Room>()
+            .FirstOrDefault(e => e.Entity.Id == room.Id);
+        
+        if (existingEntry != null)
+        {
+            existingEntry.State = EntityState.Detached;
+        }
+        
         _context.Update(room);
         await _context.SaveChangesAsync();
     }

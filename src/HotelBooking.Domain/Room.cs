@@ -12,10 +12,16 @@ public class Room
         PricePerNight = pricePerNight;
         Capacity = capacity;
     }
+    public void UpdateDetails(string roomType, decimal pricePerNight, int capacity)
+    {
+        RoomType = roomType;
+        PricePerNight = pricePerNight;
+        Capacity = capacity;
+    }
 
-    public int HotelId { get; }
-    public string RoomNumber { get; }
-    public string RoomType { get; }
-    public decimal PricePerNight { get; }
-    public int Capacity { get; }
+    public int HotelId { get; private set; }
+    public string RoomNumber { get; private set; }
+    public string RoomType { get; private set; }
+    public decimal PricePerNight { get; private set; }
+    public int Capacity { get; private set; }
 }

@@ -1,6 +1,7 @@
 using BookingManagement;
 using HotelBooking.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using RoomManagement;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +15,10 @@ builder.Services.AddDbContext<HotelBookingDbContext>(options =>
 
 // Register repositories and services
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<RoomService>();
+
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

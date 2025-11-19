@@ -154,10 +154,8 @@ public class RoomRepositoryTests
             roomType: "Suite",
             pricePerNight: 200.00m,
             capacity: 3
-        )
-        {
-            Id = room.Id
-        };
+        );
+        updatedRoom.Id = room.Id;
 
         // Act
         await _roomRepository.UpdateAsync(updatedRoom);

@@ -1,11 +1,10 @@
 ﻿name: PR Build and Test
-
 on:
   pull_request:
     branches: [ master, develop ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,73 +14,24 @@ jobs:
         with:
           dotnet-version: '10.0.x'
           include-prerelease: true
-
-      - name: Cache NuGet
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props') }}
 
       - name: Restore & Build
         run: dotnet build --configuration Release
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            **/bin/Release/**
-            !**/*.pdb
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - test-name: Unit Tests
-            project: tests/HotelBooking.Unit.Tests/HotelBooking.Unit.Tests.csproj
-            trx: unit-tests.trx
-          - test-name: Integration Tests
-            project: tests/HotelBooking.API.Tests/HotelBooking.API.Tests.csproj
-            trx: api-tests.trx
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-          include-prerelease: true
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-          path: .
-
-      - name: Run tests → ABSOLUTE PATH (this is the fix)
+      - name: Run All Tests + Produce TRX in predictable place
         run: |
-          mkdir -p ${{ runner.temp }}/trx
-          dotnet test "${{ matrix.project }}" \
-            --no-build \
+          mkdir -p test-results
+          dotnet test HotelBooking.sln \
             --configuration Release \
-            --results-directory "${{ runner.temp }}/trx" \
-            --logger "trx;LogFileName=${{ matrix.trx }}"
-
-      - name: Copy TRX files to workspace (so reporter can find them)
-        run: |
-          cp ${{ runner.temp }}/trx/*.trx . || echo "No trx yet"
-
-      - name: Debug - list TRX files
-        run: ls -la *.trx || echo "No .trx files in root"
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./test-results \
+            --logger "trx"
 
       - name: Publish Test Report
         if: always()
         uses: dorny/test-reporter@v2
         with:
-          name: ${{ matrix.test-name }}
-          path: ${{ matrix.trx }}
+          name: Tests
+          path: test-results/*.trx
           reporter: dotnet-trx
           fail-on-error: true

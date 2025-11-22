@@ -71,12 +71,11 @@ Development is driven by the TDD cycle (Red -> Green -> Refactor). This methodol
 
 ## 🛠 Getting Started
 
-###Prerequisites
+### Prerequisites
 
-** .NET 10.0 SDK**
+- .NET 10.0 SDK
+- A preferred IDE (Visual Studio, VS Code with C# Dev Kit)
 
-A preferred IDE (Visual Studio, VS Code with C# Dev Kit)
-Installation and Run
 
 #### Clone the Repository:
 ```

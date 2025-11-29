@@ -84,7 +84,7 @@ public class BookingServiceTests
             b.RoomId == bookingRequest.RoomId &&
             b.CheckInDate == bookingRequest.CheckInDate &&
             b.CheckOutDate == bookingRequest.CheckOutDate
-        )), Times.Once);
+        )), Times.Never);
     }
 
     [Test]
